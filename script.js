@@ -1,166 +1,78 @@
 let currentInput = '';
 let previousInput = '';
 let operation = null;
-let shouldResetOnNextInput = false; // Flag to track if we should clear after result
+let shouldReset = false;
 
 const resultDisplay = document.getElementById('result');
 const expressionDisplay = document.getElementById('expression');
+const darkToggle = document.getElementById('darkToggle');
 
-// Get all buttons
-const numberButtons = document.querySelectorAll('.number');
-const operatorButtons = document.querySelectorAll('.operator');
-const resultButton = document.querySelector('.result-btn');
-const closeButton = document.querySelector('.close');
-const minimizeButton = document.querySelector('.minimize');
-
-// Number button click handlers
-//add a listener to each digit button.
-numberButtons.forEach(button => {
-    button.addEventListener('click', () => {
-
-        //gets the visible digit (could contain whitespace).
-        const number = button.textContent;
-        
-        // If we just got a result, clear everything and start fresh
-        //after an equals, clear inputs so typing starts a new number.
-        if (shouldResetOnNextInput) {
+document.querySelectorAll('.number').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (shouldReset) {
             currentInput = '';
             previousInput = '';
             operation = null;
-            shouldResetOnNextInput = false;
+            shouldReset = false;
         }
-        
-        // block entering a second leading zero.
-        if (currentInput === '0' && number === '0') return;
-        
-        // build the number as a string (parsed later when calculating).
-        currentInput += number;
+        currentInput += btn.textContent;
         updateDisplay();
     });
 });
 
-// Operator button click handlers
-operatorButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        const op = button.textContent;
-        
-        if (currentInput === '') return;
-        
-        // Reset the flag since we're continuing with an operation
-        shouldResetOnNextInput = false;
-        
-        if (previousInput !== '') {
-            calculate();
-        }
-        
-        operation = op;
+document.querySelectorAll('.operator').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (!currentInput) return;
+        if (previousInput) calculate();
+        operation = btn.textContent;
         previousInput = currentInput;
         currentInput = '';
         updateDisplay();
     });
 });
 
-// Result button click handler
-resultButton.addEventListener('click', () => {
+document.querySelector('.result-btn').addEventListener('click', () => {
     calculate();
-    operation = null;
-    shouldResetOnNextInput = true; // Set flag to clear on next number input
+    shouldReset = true;
 });
 
-// Close button handler
-closeButton.addEventListener('click', () => {
-    alert('Calculator closed! (In a real app, this would close the window)');
-});
-
-// Minimize button handler
-minimizeButton.addEventListener('click', () => {
-    alert('Minimize button will work on real world.')
-})
-
-// Calculate function
 function calculate() {
-    if (previousInput === '' || currentInput === '' || operation === null) return;
-    
-    const prev = parseFloat(previousInput);
-    const current = parseFloat(currentInput);
-    let result = 0;
-    
-    switch(operation) {
-        case '+':
-            result = prev + current;
-            break;
-        case '-':
-            result = prev - current;
-            break;
-        case '×':
-            result = prev * current;
-            break;
+    if (!previousInput || !currentInput) return;
+    const a = parseFloat(previousInput);
+    const b = parseFloat(currentInput);
+    let res = 0;
+
+    switch (operation) {
+        case '+': res = a + b; break;
+        case '-': res = a - b; break;
+        case '×': res = a * b; break;
         case '/':
-            if (current === 0) {
-                alert('Cannot divide by zero!');
-                clear();
-                return;
-            }
-            result = prev / current;
+            if (b === 0) return alert("Cannot divide by zero");
+            res = a / b;
             break;
     }
-    
-    currentInput = result.toString();
+
+    currentInput = res.toString();
     previousInput = '';
     updateDisplay();
 }
 
-// Update display function
 function updateDisplay() {
-    if (currentInput === '') {
-        resultDisplay.textContent = '0';
-    } else {
-        resultDisplay.textContent = currentInput;
-    }
-    
-    if (previousInput !== '' && operation !== null) {
-        expressionDisplay.textContent = `${previousInput} ${operation} ${currentInput || ''}`;
-    } else {
-        expressionDisplay.textContent = '';
-    }
+    resultDisplay.textContent = currentInput || '0';
+    expressionDisplay.textContent = previousInput && operation
+        ? `${previousInput} ${operation}`
+        : '';
 }
 
-// Clear function
-function clear() {
-    currentInput = '';
-    previousInput = '';
-    operation = null;
-    updateDisplay();
+/* DARK MODE */
+if (localStorage.getItem("theme") === "dark") {
+    document.body.classList.add("dark");
+    darkToggle.textContent = "☀️";
 }
 
-// Keyboard support
-document.addEventListener('keydown', (e) => {
-    if (e.key >= '0' && e.key <= '9') {
-        // If we just got a result, clear everything and start fresh
-        if (shouldResetOnNextInput) {
-            currentInput = '';
-            previousInput = '';
-            operation = null;
-            shouldResetOnNextInput = false;
-        }
-        currentInput += e.key;
-        updateDisplay();
-    } else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') {
-        if (currentInput === '') return;
-        shouldResetOnNextInput = false;
-        if (previousInput !== '') calculate();
-        operation = e.key === '*' ? '×' : e.key;
-        previousInput = currentInput;
-        currentInput = '';
-        updateDisplay();
-    } else if (e.key === 'Enter' || e.key === '=') {
-        calculate();
-        operation = null;
-        shouldResetOnNextInput = true; // Set flag to clear on next number input
-    } else if (e.key === 'Escape' || e.key === 'c' || e.key === 'C') {
-        clear();
-    }
+darkToggle.addEventListener("click", () => {
+    document.body.classList.toggle("dark");
+    const isDark = document.body.classList.contains("dark");
+    darkToggle.textContent = isDark ? "☀️" : "🌙";
+    localStorage.setItem("theme", isDark ? "dark" : "light");
 });
-
-// Initialize display
-updateDisplay();
